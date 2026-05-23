@@ -1,9 +1,9 @@
 import jwt, {} from "jsonwebtoken";
 import { randomUUID } from "crypto";
-const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
-const tokenExpiry = (process.env.ACCESS_TOKEN_EXPIRY || "1d");
+const getTokenExpiry = () => (process.env.ACCESS_TOKEN_EXPIRY || "1d");
 const generateToken = (entityId, options = {}) => {
-    const { purpose = "auth", expiresIn = tokenExpiry, jwtid = randomUUID(), payloadRef, } = options;
+    const { purpose = "auth", expiresIn = getTokenExpiry(), jwtid = randomUUID(), payloadRef, } = options;
+    const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
     if (!tokenSecret) {
         throw new Error("JWT secret is missing from environment variables");
     }

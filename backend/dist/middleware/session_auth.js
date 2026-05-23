@@ -1,7 +1,15 @@
 import jwt from "jsonwebtoken";
 import Session from "../schema/Session.models.js";
-const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
 const cookieName = process.env.SESSION_COOKIE_NAME || "session_token";
+const getCookieSameSite = () => (process.env.COOKIE_SAME_SITE || "lax");
+const getClearCookieOptions = () => {
+    const sameSite = getCookieSameSite();
+    return {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production" || sameSite === "none",
+        sameSite,
+    };
+};
 const extractToken = (req) => {
     const authHeader = req.headers.authorization;
     if (req.cookies?.[cookieName]) {
@@ -18,8 +26,10 @@ export const requireSession = async (req, res, next) => {
         if (!token) {
             return res.status(401).json({ message: "Session token is missing" });
         }
+        const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
         if (!tokenSecret) {
-            throw new Error("JWT secret is missing from environment variables");
+            console.error("ACCESS_TOKEN_SECRET is missing from environment variables");
+            return res.status(401).json({ message: "Session authentication is not configured" });
         }
         const decoded = jwt.verify(token, tokenSecret);
         if (decoded.purpose !== "session") {
@@ -27,11 +37,7 @@ export const requireSession = async (req, res, next) => {
         }
         const session = await Session.findOne({ sessionId: decoded.id, tokenId: decoded.jwtid });
         if (!session) {
-            res.clearCookie(cookieName, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "lax",
-            });
+            res.clearCookie(cookieName, getClearCookieOptions());
             return res.status(401).json({ message: "Session is no longer valid" });
         }
         const routeSessionId = req.params.sessionId;
@@ -52,8 +58,8 @@ export const requireSession = async (req, res, next) => {
         if (error instanceof jwt.JsonWebTokenError) {
             return res.status(401).json({ message: "Invalid session token" });
         }
-        const message = error instanceof Error ? error.message : "Failed to authenticate session";
-        return res.status(500).json({ message });
+        console.error("Session authentication error:", error);
+        return res.status(401).json({ message: "Failed to authenticate session" });
     }
 };
 //# sourceMappingURL=session_auth.js.map
