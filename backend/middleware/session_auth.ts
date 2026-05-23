@@ -3,9 +3,20 @@ import jwt from "jsonwebtoken";
 import Session from "../schema/Session.models.js";
 import type { SessionTokenPayload } from "../utils/generateToken.js";
 
-const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
 const cookieName = process.env.SESSION_COOKIE_NAME || "session_token";
-const cookieSameSite = (process.env.COOKIE_SAME_SITE || "lax") as "lax" | "strict" | "none";
+
+const getCookieSameSite = () =>
+  (process.env.COOKIE_SAME_SITE || "lax") as "lax" | "strict" | "none";
+
+const getClearCookieOptions = () => {
+  const sameSite = getCookieSameSite();
+
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" || sameSite === "none",
+    sameSite,
+  };
+};
 
 const extractToken = (req: Request) => {
   const authHeader = req.headers.authorization;
@@ -29,8 +40,11 @@ export const requireSession = async (req: Request, res: Response, next: NextFunc
       return res.status(401).json({ message: "Session token is missing" });
     }
 
+    const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
+
     if (!tokenSecret) {
-      throw new Error("JWT secret is missing from environment variables");
+      console.error("ACCESS_TOKEN_SECRET is missing from environment variables");
+      return res.status(401).json({ message: "Session authentication is not configured" });
     }
 
     const decoded = jwt.verify(token, tokenSecret) as SessionTokenPayload;
@@ -42,11 +56,7 @@ export const requireSession = async (req: Request, res: Response, next: NextFunc
     const session = await Session.findOne({ sessionId: decoded.id, tokenId: decoded.jwtid });
 
     if (!session) {
-      res.clearCookie(cookieName, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production" || cookieSameSite === "none",
-        sameSite: cookieSameSite,
-      });
+      res.clearCookie(cookieName, getClearCookieOptions());
       return res.status(401).json({ message: "Session is no longer valid" });
     }
 
@@ -72,7 +82,7 @@ export const requireSession = async (req: Request, res: Response, next: NextFunc
       return res.status(401).json({ message: "Invalid session token" });
     }
 
-    const message = error instanceof Error ? error.message : "Failed to authenticate session";
-    return res.status(500).json({ message });
+    console.error("Session authentication error:", error);
+    return res.status(401).json({ message: "Failed to authenticate session" });
   }
 };

@@ -1,8 +1,8 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
-const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
-const tokenExpiry = (process.env.ACCESS_TOKEN_EXPIRY || "1d") as SignOptions["expiresIn"];
+const getTokenExpiry = () =>
+  (process.env.ACCESS_TOKEN_EXPIRY || "1d") as SignOptions["expiresIn"];
 
 export type SessionTokenPayload = {
   id: string;
@@ -20,10 +20,12 @@ export type GenerateTokenOptions = {
 const generateToken = (entityId: string, options: GenerateTokenOptions = {}) => {
   const {
     purpose = "auth",
-    expiresIn = tokenExpiry,
+    expiresIn = getTokenExpiry(),
     jwtid = randomUUID(),
     payloadRef,
   } = options;
+
+  const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
 
   if (!tokenSecret) {
     throw new Error("JWT secret is missing from environment variables");
