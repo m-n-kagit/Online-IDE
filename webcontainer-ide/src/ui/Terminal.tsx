@@ -61,10 +61,10 @@ export const Terminal: React.FC = () => {
     xtermRef.current = xterm;
     fitAddonRef.current = fitAddon;
 
-    // 注册全局实例
+
     setTerminalInstance(xterm);
 
-    // 延迟 fit 确保容器尺寸正确
+  
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         try {
@@ -75,7 +75,7 @@ export const Terminal: React.FC = () => {
       });
     });
 
-    // 监听滚动
+
     let scrollTimeout: ReturnType<typeof setTimeout>;
     xterm.onScroll(() => {
       clearTimeout(scrollTimeout);
@@ -88,12 +88,11 @@ export const Terminal: React.FC = () => {
             setShowScrollButton(!isAtBottom);
           }
         } catch (e) {
-          // 忽略
+     
         }
       }, 100);
     });
 
-    // 初始化命令行
     setTimeout(() => {
       xterm.writeln('\x1b[1;36m╔═══════════════════════════════════════╗\x1b[0m');
       xterm.writeln('\x1b[1;36m║   WebContainer IDE Terminal          ║\x1b[0m');
@@ -109,7 +108,7 @@ export const Terminal: React.FC = () => {
 
       writePrompt();
 
-      // 处理输入
+
       xterm.onData((data) => {
         if (isProcessRunning) return;
 
@@ -123,21 +122,21 @@ export const Terminal: React.FC = () => {
           xterm.write('\r\n');
 
           if (command) {
-            // 记录命令开始位置
+         
             const startLine = xterm.buffer.active.baseY + xterm.buffer.active.cursorY;
 
-            // 立即滚动到命令位置
+       
             requestAnimationFrame(() => {
               try {
                 xterm.scrollToLine(Math.max(0, startLine - 1));
               } catch (e) {
-                // 忽略
+             
               }
             });
 
             isProcessRunning = true;
 
-            // 异步执行命令
+         
             (async () => {
               try {
                 const container = await getWebContainer();
@@ -184,19 +183,19 @@ export const Terminal: React.FC = () => {
             writePrompt();
           }
         } else if (code >= 32 && code <= 126) {
-          // 可打印字符
+        
           currentLine += data;
           xterm.write(data);
         }
       });
     }, 100);
 
-    // 响应式调整
+  
     const resizeObserver = new ResizeObserver(() => {
       try {
         fitAddon.fit();
       } catch (e) {
-        // 忽略
+     
       }
     });
 
