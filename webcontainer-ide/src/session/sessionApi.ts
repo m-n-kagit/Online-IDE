@@ -19,7 +19,7 @@ type SessionResponse = {
   files: SessionEntry[];
 };
 
-const API_BASE_URL = 'https://online-ide-9lyu.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://online-ide-9lyu.onrender.com';
 
 function buildUrl(path: string): string {
   return `${API_BASE_URL}${path}`;

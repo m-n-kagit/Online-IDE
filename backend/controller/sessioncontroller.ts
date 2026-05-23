@@ -8,6 +8,7 @@ import generateToken, {
 
 const cookieName = process.env.SESSION_COOKIE_NAME || "session_token";
 const cookieMaxAge = Number(process.env.SESSION_COOKIE_MAX_AGE || 7 * 24 * 60 * 60 * 1000);
+const cookieSameSite = (process.env.COOKIE_SAME_SITE || "lax") as "lax" | "strict" | "none";
 
 type SessionFilesBody = {
   files?: FileInput[];
@@ -19,8 +20,8 @@ type SessionParams = {
 
 const getCookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production" || cookieSameSite === "none",
+  sameSite: cookieSameSite,
   maxAge: cookieMaxAge,
 });
 

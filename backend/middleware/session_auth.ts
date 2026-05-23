@@ -5,6 +5,7 @@ import type { SessionTokenPayload } from "../utils/generateToken.js";
 
 const tokenSecret = process.env.ACCESS_TOKEN_SECRET;
 const cookieName = process.env.SESSION_COOKIE_NAME || "session_token";
+const cookieSameSite = (process.env.COOKIE_SAME_SITE || "lax") as "lax" | "strict" | "none";
 
 const extractToken = (req: Request) => {
   const authHeader = req.headers.authorization;
@@ -43,8 +44,8 @@ export const requireSession = async (req: Request, res: Response, next: NextFunc
     if (!session) {
       res.clearCookie(cookieName, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production" || cookieSameSite === "none",
+        sameSite: cookieSameSite,
       });
       return res.status(401).json({ message: "Session is no longer valid" });
     }
